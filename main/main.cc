@@ -11,6 +11,11 @@
 #include "misc/misc.h"
 #include "public.h"
 
+#include "circuit/add_gadget.h"
+#include "circuit/grand_product_gadget.h"
+#include "circuit/shift_gadget.h"
+#include "circuit/max_gadget.h"
+#include "circuit/min_gadget.h"
 bool DEBUG_CHECK = false;
 bool BIG_MODE = false;
 bool DISABLE_TBB = false;
@@ -31,5 +36,13 @@ bool InitAll(std::string const& data_dir) {
 std::unique_ptr<tbb::task_scheduler_init> tbb_init;
 
 int main(int argc, char** argv) {
+  InitAll("./");
+  // circuit::flt::TestFloatVar();
+  // circuit::flt::TestSelectGadget();
+  // circuit::flt::TestAdd();
+  // circuit::flt::TestGrandProductGadget();
+  // circuit::flt::TestShiftGadget();
+  // circuit::flt::TestMaxGadget();
+  circuit::flt::TestMinGadget();
   return 1;
 }
