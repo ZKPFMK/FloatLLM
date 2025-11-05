@@ -16,6 +16,12 @@
 #include "circuit/shift_gadget.h"
 #include "circuit/max_gadget.h"
 #include "circuit/min_gadget.h"
+#include "circuit/or_gadget.h"
+#include "circuit/xnor_gadget.h"
+#include "circuit/zero_gadget.h"
+#include "circuit/and_gadget.h"
+#include "circuit/pack_gadget.h"
+#include "circuit/compare_gadget.h"
 bool DEBUG_CHECK = false;
 bool BIG_MODE = false;
 bool DISABLE_TBB = false;
@@ -37,12 +43,29 @@ std::unique_ptr<tbb::task_scheduler_init> tbb_init;
 
 int main(int argc, char** argv) {
   InitAll("./");
+
+  circuit::flt::Pow2[0] = 1;
+  for(size_t i=1; i<circuit::flt::Pow2.size(); i++){
+    circuit::flt::Pow2[i] = circuit::flt::Pow2[i-1] * 2;
+  }
+
   // circuit::flt::TestFloatVar();
   // circuit::flt::TestSelectGadget();
+  // circuit::flt::TestPack1Gadget();
+  // circuit::flt::TestPack2Gadget();
+  // circuit::flt::TestZero1Gadget();
+  // circuit::flt::TestZero2Gadget();
   // circuit::flt::TestAdd();
   // circuit::flt::TestGrandProductGadget();
   // circuit::flt::TestShiftGadget();
   // circuit::flt::TestMaxGadget();
-  circuit::flt::TestMinGadget();
+  // circuit::flt::TestMinGadget();
+  // circuit::flt::TestOrGadget();
+  // circuit::flt::TestCompareGadget();
+  // circuit::flt::TestXnorGadget();
+  // 
+  // circuit::flt::TestAndGadget();
+  circuit::flt::TestAdd();
+
   return 1;
 }
