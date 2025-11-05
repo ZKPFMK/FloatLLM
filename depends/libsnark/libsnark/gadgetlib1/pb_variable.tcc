@@ -335,6 +335,15 @@ linear_combination<FieldT> pb_coeff_sum(const pb_linear_combination_array<FieldT
     return linear_combination<FieldT>(all_terms);
 }
 
+template<typename FieldT>
+void linear_combination_array<FieldT>::evaluate(const std::vector<FieldT> &assignment, std::vector<FieldT> & ret) const
+{
+    for (size_t i = 0; i < this->size(); ++i)
+    {
+        ret[i] = (*this)[i].evaluate(assignment);
+    }
+}
+
 
 } // libsnark
 #endif // PB_VARIABLE_TCC

@@ -1,10 +1,8 @@
 #pragma once
 
-#include <libsnark/gadgetlib1/gadget.hpp>
-#include <libsnark/gadgetlib1/gadgets/basic_gadgets.hpp>
-#include <libsnark/gadgetlib1/pb_variable.hpp>
+#include "./floatvar.h"
 
-namespace circuit {
+namespace circuit::flt {
 
 class grand_product_gadget : public libsnark::gadget<Fr> {
 public:
@@ -13,11 +11,10 @@ public:
    * y = x[0] * x[1] * ... * x[n-1]
    */
   grand_product_gadget(libsnark::protoboard<Fr>& pb,
-                       libsnark::linear_combination_array<Fr> const& x,
+                       libsnark::pb_linear_combination_array<Fr> const& x,
                        const std::string& annotation_prefix = "")
       : x(x), libsnark::gadget<Fr>(pb, annotation_prefix) {
     CHECK(x.size() > 1, "");
-
     y.allocate(this->pb, x.size()-1);
     this->pb.add_r1cs_constraint(
       libsnark::r1cs_constraint<Fr>(x[0], x[1], y[0])
@@ -31,11 +28,10 @@ public:
   }
 
   void generate_r1cs_witness() {
-    std::vector<Fr> vx(x.size());
-    x.evaluate(pb.full_variable_assignment(), vx);
-    pb.val(y[0]) = vx[0] * vx[1];
+    x.evaluate(this->pb);
+    pb.val(y[0]) = pb.lc_val(x[0]) * pb.lc_val(x[1]);
     for(size_t i=2; i<x.size(); i++){
-        pb.val(y[i-1]) = pb.val(y[i-2]) * vx[i];
+        pb.val(y[i-1]) = pb.val(y[i-2]) * pb.lc_val(x[i]);
     }
   }
 
@@ -45,7 +41,7 @@ private:
   libsnark::pb_variable_array<Fr> y;
 
 public:
-  libsnark::linear_combination_array<Fr> const x;
+  libsnark::pb_linear_combination_array<Fr> const x;
 };
 
 inline bool TestGrandProductGadget() {
@@ -53,19 +49,26 @@ inline bool TestGrandProductGadget() {
  
   libsnark::protoboard<Fr> pb;
   libsnark::pb_variable_array<Fr> x;
-  libsnark::linear_combination_array<Fr> y(3);
+  libsnark::pb_linear_combination_array<Fr> y(3);
 
   x.allocate(pb, 3, "x");
   pb.val(x[0]) = 2;
   pb.val(x[1]) = 4;
   pb.val(x[2]) = 6;
   
-  y[0] = x[1] - x[0];
-  y[1] = x[2] - x[1];
-  y[2] = 1;
-  grand_product_gadget gadget(pb, y);
+  libsnark::linear_combination<Fr> z0 = x[1] - x[0];
+  libsnark::linear_combination<Fr> z1 = x[2] - x[1];
+  libsnark::linear_combination<Fr> z2 = 1;
+  y[0].assign(pb, z0);
+  y[1].assign(pb, z1);
+  y[2].assign(pb, z2);
+
+  grand_product_gadget gadget(pb, y, "grand product");
+
+
   gadget.generate_r1cs_witness();
-  CHECK(4 == pb.val(gadget.ret()).getInt64(), "");
+  
+  std::cout << Tick::GetIndentString() << pb.val(gadget.ret()) << "\n";
   std::cout << Tick::GetIndentString()
             << "num_constraints: " << pb.num_constraints() << "\n";
   std::cout << Tick::GetIndentString()

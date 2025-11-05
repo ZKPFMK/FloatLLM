@@ -516,7 +516,6 @@ linear_combination<FieldT>::linear_combination(const std::vector<linear_term<Fie
     }
     terms.resize((result_it - terms.begin()) + 1);
 }
-
 } // libsnark
 
 #endif // VARIABLE_TCC

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "compare_gadget.h"
+#include "./floatvar.h"
+#include "./select_gadget.h"
 
-namespace circuit {
+namespace circuit::flt {
 
 /**
  * ret = min(x, y), 其中x, y的二进制长度为n
@@ -10,14 +11,19 @@ namespace circuit {
 class min_gadget : public libsnark::gadget<Fr> {
 public:
   min_gadget(libsnark::protoboard<Fr>& pb,
-             libsnark::linear_combination<Fr> const& x,
-             libsnark::linear_combination<Fr> const& y,
+             libsnark::pb_linear_combination<Fr> const& x,
+             libsnark::pb_linear_combination<Fr> const& y,
              size_t n, const std::string& annotation_prefix = "")
       : x(x), y(y), libsnark::gadget<Fr>(pb, annotation_prefix) {
     assert(n > 0);
 
-    cmp.reset(new comparison_gadget(pb, n, x, y));
-    slt.reset(new select_gadget(pb, cmp->ret_lt(), x, y));
+    libsnark::pb_variable<Fr> less, less_or_eq;
+    less.allocate(pb);
+    less_or_eq.allocate(pb);
+    cmp.reset(new libsnark::comparison_gadget<Fr>(pb, n, x, y, less, less_or_eq));
+    cmp->generate_r1cs_constraints();
+    
+    slt.reset(new select_gadget(pb, less, x, y));
   }
 
   void generate_r1cs_witness() {
@@ -25,15 +31,15 @@ public:
     slt->generate_r1cs_witness();
   }
 
-  libsnark::linear_combination<Fr> ret() const { return slt->ret(); }
+  libsnark::pb_variable<Fr> ret() const { return slt->ret(); }
 
 private:
-  std::shared_ptr<comparison_gadget> cmp;
+  std::shared_ptr<libsnark::comparison_gadget<Fr>> cmp;
   std::shared_ptr<select_gadget> slt;
 
 public:
-  libsnark::linear_combination<Fr> const x;
-  libsnark::linear_combination<Fr> const y;
+  libsnark::pb_linear_combination<Fr> const x;
+  libsnark::pb_linear_combination<Fr> const y;
 };
 
 inline bool TestMinGadget() {
@@ -49,7 +55,7 @@ inline bool TestMinGadget() {
       pb.val(x) = i;
       pb.val(y) = j;
       gadget.generate_r1cs_witness();
-      CHECK(std::min(i, j) == gadget.ret().evaluate(pb.full_variable_assignment()).getInt64(), "");
+      CHECK(std::min(i, j) == pb.val(gadget.ret()).getInt64(), "");
     }
   }
   
@@ -57,7 +63,7 @@ inline bool TestMinGadget() {
             << "num_constraints: " << pb.num_constraints()
             << ", num_variables: " << pb.num_variables() << "\n";
     
-  CHECK(pb.is_satisfied(), "");
+  assert(pb.is_satisfied());
   return true;
 }
 }  // namespace circuit::fixed_point

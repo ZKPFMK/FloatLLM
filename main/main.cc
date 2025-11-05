@@ -11,7 +11,7 @@
 #include "misc/misc.h"
 #include "public.h"
 
-#include "circuit/add_gadget.h"
+#include "circuit/float/add_gadget.h"
 #include "circuit/grand_product_gadget.h"
 #include "circuit/shift_gadget.h"
 #include "circuit/max_gadget.h"
