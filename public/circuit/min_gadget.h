@@ -1,11 +1,13 @@
 #pragma once
 
 #include "compare_gadget.h"
+#include "select_gadget.h"
 
 namespace circuit {
 
 /**
  * ret = min(x, y), 其中x, y的二进制长度为n
+ * 约束数量: n+6
  */
 class min_gadget : public libsnark::gadget<Fr> {
 public:

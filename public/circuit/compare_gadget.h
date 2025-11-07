@@ -8,6 +8,8 @@ namespace circuit {
  * 要求:x, y \in {0, 1}^n
  * less = x < y
  * less_or_eq =  x <= y
+ * 
+ * 约束数量, n+5 
  */
 class comparison_gadget : public libsnark::gadget<Fr> {
 private:

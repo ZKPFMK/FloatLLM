@@ -22,6 +22,9 @@
 #include "circuit/and_gadget.h"
 #include "circuit/pack_gadget.h"
 #include "circuit/compare_gadget.h"
+#include "circuit/product_gadget.h"
+#include "circuit/float/compare_abs_gadget.h"
+#include "circuit/onehot_gadget.h"
 bool DEBUG_CHECK = false;
 bool BIG_MODE = false;
 bool DISABLE_TBB = false;
@@ -63,9 +66,12 @@ int main(int argc, char** argv) {
   // circuit::flt::TestOrGadget();
   // circuit::flt::TestCompareGadget();
   // circuit::flt::TestXnorGadget();
-  // 
+  // circuit::TestProductGadget();
+    circuit::Test1HotGadget();
   // circuit::flt::TestAndGadget();
-  circuit::flt::TestAdd();
+  // circuit::flt::TestCmpAbsGadget();
+  // circuit::flt::TestAdd();
+  // circuit::flt::Test
 
   return 1;
 }

@@ -1,13 +1,11 @@
 #pragma once
 
-#include <libsnark/gadgetlib1/gadget.hpp>
-#include <libsnark/gadgetlib1/gadgets/basic_gadgets.hpp>
-#include <libsnark/gadgetlib1/pb_variable.hpp>
+#include "circuit.h"
 
 namespace circuit {
-
 /**
  * ret = x xnor v, 其中x, y \in {0, 1}
+ * 约束数量: 1
  */
 class xnor_gadget : public libsnark::gadget<Fr> {
 public:

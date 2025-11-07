@@ -1,16 +1,14 @@
 #pragma once
 
-#include <libsnark/gadgetlib1/gadget.hpp>
-#include <libsnark/gadgetlib1/gadgets/basic_gadgets.hpp>
-#include <libsnark/gadgetlib1/pb_variable.hpp>
-
+#include "circuit.h"
 
 namespace circuit {
+// 约束数量: 1
 class select_gadget1 : public libsnark::gadget<Fr> {
 public:
   /**
    * 要求:flag \in {0, 1}
-   * z = b x + (1 - b) y
+   * z = b (x - y) + y
    * 当b = 1 => z = x
    * 当b = 0 => z = y
    */
@@ -108,9 +106,10 @@ class select_gadget {
 public:
   /**
    * 要求:flag \in {0, 1}
-   * z = b x + (1 - b) y
+   * z = y + b(x - y)
    * 当b = 1 => z = x
    * 当b = 0 => z = y
+   * 约束数量: 1
    */
   select_gadget(libsnark::protoboard<Fr>& pb,
                libsnark::linear_combination<Fr> const& b,

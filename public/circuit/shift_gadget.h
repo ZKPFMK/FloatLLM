@@ -5,6 +5,7 @@
 
 namespace circuit {
 
+// 约束数量: 2n+1
 class shift_gadget : public libsnark::gadget<Fr> {
 public:
   /**

@@ -4,6 +4,7 @@
 
 namespace circuit{
 
+// 约束数量: 2
 class or_gadget1 : public libsnark::gadget<Fr> {
 public:
   /**
