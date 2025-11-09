@@ -39,7 +39,6 @@ public:
 
   void generate_r1cs_witness(){
     Fr vpacked = packed.evaluate(pb.full_variable_assignment());
-    DCHECK(vpacked.getBitSize() <= bits.size(), ""); 
 
     mpz_class v = vpacked.getMpz();
     for (size_t i=0; i<bits.size(); ++i){

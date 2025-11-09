@@ -25,7 +25,9 @@
 #include "circuit/product_gadget.h"
 #include "circuit/float/compare_abs_gadget.h"
 #include "circuit/onehot_gadget.h"
-bool DEBUG_CHECK = false;
+#include "circuit/float/mul_gadget.h"
+
+bool DEBUG_CHECK = true;
 bool BIG_MODE = false;
 bool DISABLE_TBB = false;
 
@@ -45,12 +47,12 @@ bool InitAll(std::string const& data_dir) {
 std::unique_ptr<tbb::task_scheduler_init> tbb_init;
 
 int main(int argc, char** argv) {
-  InitAll("./");
+  // InitAll("./");
 
-  circuit::flt::Pow2[0] = 1;
-  for(size_t i=1; i<circuit::flt::Pow2.size(); i++){
-    circuit::flt::Pow2[i] = circuit::flt::Pow2[i-1] * 2;
-  }
+  // circuit::flt::Pow2[0] = 1;
+  // for(size_t i=1; i<circuit::flt::Pow2.size(); i++){
+  //   circuit::flt::Pow2[i] = circuit::flt::Pow2[i-1] * 2;
+  // }
 
   // circuit::flt::TestFloatVar();
   // circuit::flt::TestSelectGadget();
@@ -67,11 +69,13 @@ int main(int argc, char** argv) {
   // circuit::flt::TestCompareGadget();
   // circuit::flt::TestXnorGadget();
   // circuit::TestProductGadget();
-    circuit::Test1HotGadget();
+    // circuit::Test1HotGadget();
   // circuit::flt::TestAndGadget();
   // circuit::flt::TestCmpAbsGadget();
   // circuit::flt::TestAdd();
   // circuit::flt::Test
+
+  // circuit::flt::TestMul();
 
   return 1;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "floatvar.h"
-
+#include "circuit/select_gadget.h"
 #include "circuit/compare_gadget.h"
 #include "circuit/grand_product_gadget.h"
 // 49 => 41

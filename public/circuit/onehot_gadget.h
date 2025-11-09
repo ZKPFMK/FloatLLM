@@ -3,10 +3,13 @@
 #include "circuit.h"
 
 namespace circuit {
-// 约束数量:n+1, n:比特长度
+// 约束数量:n+2, n:比特长度
 class onehot_gadget : public libsnark::gadget<Fr> {
 private:
-    /* no internal variables */
+/**
+ * 要求: x \in [1, n]
+ * 
+ */
 public:
   libsnark::pb_variable_array<Fr> bits;
   libsnark::linear_combination<Fr> const x;
@@ -33,7 +36,7 @@ public:
     }
 
     pb.add_r1cs_constraint(
-      libsnark::r1cs_constraint<Fr>(1, terms1, x)
+      libsnark::r1cs_constraint<Fr>(1, terms1, x-1)
     );
     pb.add_r1cs_constraint(
       libsnark::r1cs_constraint<Fr>(1, terms2, 1)
@@ -42,11 +45,11 @@ public:
 
   void generate_r1cs_witness(){
     uint vx = x.evaluate(pb.full_variable_assignment()).getUint64();
-    DCHECK(vx < bits.size(), ""); 
+    DCHECK(vx-1 < bits.size() && vx-1 >= 0, ""); 
     for (size_t i=0; i<bits.size(); ++i){
         pb.val(bits[i]) = 0;
     }
-    pb.val(bits[vx]) = 1;
+    pb.val(bits[vx-1]) = 1;
   }
 
   libsnark::pb_variable<Fr> ret(size_t i) { 
@@ -64,7 +67,7 @@ inline bool Test1HotGadget() {
   x.allocate(pb);
   onehot_gadget gadget(pb, x, n);
   for(size_t i=0; i<n; i++){
-      pb.val(x) = i;
+      pb.val(x) = i+1;
       gadget.generate_r1cs_witness();
       for(size_t j=0; j<n; j++){
         if(i == j){
