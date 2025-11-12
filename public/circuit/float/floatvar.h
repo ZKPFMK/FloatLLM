@@ -119,6 +119,7 @@ void Read1DFile(std::string const& path, std::vector<uint32_t> & data){
 }
 
 void Read2DFile(std::string const& path, std::vector< std::vector<uint32_t>> & data){
+  Tick tick(__FN__);
   std::ifstream fin(path);
   if (!fin.is_open()) {
     std::cerr << "failed to open file: " << path << "\n";

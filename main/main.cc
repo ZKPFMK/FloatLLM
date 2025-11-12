@@ -47,15 +47,16 @@ bool InitAll(std::string const& data_dir) {
 std::unique_ptr<tbb::task_scheduler_init> tbb_init;
 
 int main(int argc, char** argv) {
-  // InitAll("./");
+  InitAll("./");
 
-  // circuit::flt::Pow2[0] = 1;
-  // for(size_t i=1; i<circuit::flt::Pow2.size(); i++){
-  //   circuit::flt::Pow2[i] = circuit::flt::Pow2[i-1] * 2;
-  // }
+  circuit::flt::Pow2[0] = 1;
+  for(size_t i=1; i<circuit::flt::Pow2.size(); i++){
+    circuit::flt::Pow2[i] = circuit::flt::Pow2[i-1] * 2;
+  }
 
   // circuit::flt::TestFloatVar();
-  // circuit::flt::TestSelectGadget();
+  // circuit::TestSelectGadget();
+  // circuit::TestTernaryGadget();
   // circuit::flt::TestPack1Gadget();
   // circuit::flt::TestPack2Gadget();
   // circuit::flt::TestZero1Gadget();
@@ -66,7 +67,9 @@ int main(int argc, char** argv) {
   // circuit::flt::TestMaxGadget();
   // circuit::flt::TestMinGadget();
   // circuit::flt::TestOrGadget();
-  // circuit::flt::TestCompareGadget();
+  // circuit::TestCompareGadget();
+  // circuit::TestRangeGadget();
+
   // circuit::flt::TestXnorGadget();
   // circuit::TestProductGadget();
     // circuit::Test1HotGadget();
@@ -75,7 +78,7 @@ int main(int argc, char** argv) {
   // circuit::flt::TestAdd();
   // circuit::flt::Test
 
-  // circuit::flt::TestMul();
+  circuit::flt::TestMul();
 
   return 1;
 }

@@ -25,35 +25,6 @@ public:
     
     cmp.reset(new comparison_gadget(pb, E+M+2, exp1*Pow2[M+1]+man1, exp2*Pow2[M+1]+man2));
 
-    // 比较指数大小
-    // cmp_exp.reset(new comparison_gadget(pb, E+1, exp1, exp2));
-
-    // 比较尾数大小
-    // cmp_man.reset(new comparison_gadget(pb, M+1, man1, man2));
-
-    // leq_exp, lt_exp: 
-    //    0, 0 => ea > eb
-    //    0, 1 => ea = eb
-    //    1, 1 => ea < eb
-    // leq_man, lt_man: 
-    //    0, 0 => ma > mb
-    //    0, 1 => ma = mb
-    //    1, 1 => ma < mb
-    /***
-     * 上三角矩阵的和=2 or 上三角矩阵的和=2 => b > a
-     * exp man exp man exp man | exp man exp man exp man | exp man exp man exp man                               
-     *  0   0   0   0   0   1  |  0   0   0   0   0   1  |  1   0   1   0   1   1                                    
-     *  0   0   0   1   0   1  |  1   0   1   1   1   1  |  1   0   1   1   1   1                          
-     *    a       a       a    |    a       a       b    |    b       b       b                      
-     * 
-     */
-    // libsnark::linear_combination_array<Fr> eq_23_in(2);
-    // eq_23_in[0] = cmp_exp->ret_lt() + cmp_exp->ret_leq() + cmp_man->ret_leq() - 2;
-    // eq_23_in[1] = cmp_exp->ret_lt() + cmp_exp->ret_leq() + cmp_man->ret_leq() - 3;
-    // eq_23.reset(new grand_product_gadget(pb, eq_23_in));
-
-    // a < b
-    // lt.reset(new zero_gadget(pb, eq_23->ret()));
 
     // a < b ? b : a
     libsnark::linear_combination_array<Fr> f1(3);

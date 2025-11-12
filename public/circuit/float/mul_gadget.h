@@ -1,266 +1,204 @@
 #pragma once
 
 #include "floatvar.h"
-#include "circuit/select_gadget.h"
-#include "circuit/shift_gadget.h"
-#include "circuit/max_gadget.h"
-#include "circuit/min_gadget.h"
 #include "circuit/or_gadget.h"
 #include "circuit/xnor_gadget.h"
-#include "circuit/zero_gadget.h"
-#include "circuit/and_gadget.h"
-#include "circuit/compare_gadget.h"
-#include "compare_abs_gadget.h"
-#include "add_norm_gadget.h"
-#include "add_round_gadget.h"
-#include "circuit/onehot_gadget.h"
-
-
-//208->193->190->185->177
+//205->
 namespace circuit::flt {
-
 class mul_gadget : public libsnark::gadget<Fr> {
 public:
-
   void generate_r1cs_witness() {
-    Tick tick(__FN__);
-
-    Fr m = pb.val(a.mantissa) * pb.val(b.mantissa);
-    pb.val(man) = m;
+    // Tick tick(__FN__);
+    pb.val(prod) = pb.val(a.mantissa) * pb.val(b.mantissa);
+    Fr m = pb.val(prod);
     DCHECK(m == 0 || (m >= Pow2[M*2] && m < Pow2[M*2+2]), "");
-    if(m >= Pow2[M*2+1]){
-      pb.val(offset) = 1;
-    }else{
-      pb.val(offset) = 2;
-    }
 
-    pb.val(shift) = m * pb.val(offset);
-
-    shift_bits->generate_r1cs_witness();
-
-    is_shift_zero->generate_r1cs_witness();
-
-    bits_len->generate_r1cs_witness();
-    
-    onehot_len->generate_r1cs_witness();
-
+    prod_bits->generate_r1cs_witness();
+    exp_range->generate_r1cs_witness();
+    exp_delta->generate_r1cs_witness();
+    prod_lshift->generate_r1cs_witness();
+    prod_lshift_bits->generate_r1cs_witness();
     is_round_even->generate_r1cs_witness();
-
-    for(size_t i=0; i<M+1; i++){
-      pb.val(prod1[i]) = pb.val(onehot_len->ret(i)) * pb.val(shift_bits->ret(M*2+1-i));
-      pb.val(prod2[i]) = pb.val(onehot_len->ret(i)) * pb.val(shift_bits->ret(M*2-i));
-      pb.val(prod3[i]) = pb.val(shift_bits->ret(M*2+1-i)) * Pow2[M-i];
-    }
-
     carry->generate_r1cs_witness();
-    is_overflow->generate_r1cs_witness();
-    man_ret->generate_r1cs_witness();
 
-    debug();
+    Fr::pow(pb.val(two_delta), 2, exp_delta->ret().evaluate(pb.full_variable_assignment()));
+    pb.val(pack_shift) = pack_man.evaluate(pb.full_variable_assignment()) * pb.val(two_delta);
+
+    is_man_overflow->generate_r1cs_witness();
+    man->generate_r1cs_witness();
+    is_man_zero->generate_r1cs_witness();
+    is_exp_overflow->generate_r1cs_witness();
+    sign->generate_r1cs_witness();
+    is_ret_zero->generate_r1cs_witness();
+    is_ret_abnorm->generate_r1cs_witness();
+    Fr v0 = (1 - is_ret_zero->ret()).evaluate(pb.full_variable_assignment());
+    pb.val(c.sign) = v0 * (1 - sign->ret()).evaluate(pb.full_variable_assignment());
+    pb.val(c.exponent) = v0 * (exp - (Pow2[E-1]+M-1)).evaluate(pb.full_variable_assignment());
+    pb.val(c.mantissa) = v0 * man->ret().evaluate(pb.full_variable_assignment());
+    pb.val(c.abnormal) = is_ret_abnorm->ret().evaluate(pb.full_variable_assignment());
+
+    // debug();
   }
 
   void debug(){
-    Fr e = (a.exponent + b.exponent).evaluate(pb.full_variable_assignment());
-    Fr m = pb.val(man);
-    Fr oft = pb.val(offset);
-    Fr sht = pb.val(shift);
-    Fr len = bits_len->ret().evaluate(pb.full_variable_assignment());
-    Fr round_even = is_round_even->ret().evaluate(pb.full_variable_assignment());
-    Fr cry = carry->ret().evaluate(pb.full_variable_assignment());
-
-    libsnark::linear_combination_array<Fr> validity_bits(M+1);
-    for(size_t i=0; i<M+1; i++){
-      for(size_t j=i; j<M+1; j++){
-        validity_bits[i] = validity_bits[i] + onehot_len->ret(j);
-      }
-    }
-
-    libsnark::linear_combination<Fr> pack_man = carry->ret();
-    for(size_t i=0; i<M+1; i++){
-      pack_man = pack_man + prod3[i];
-    }
-
-    std::cout << "e m:" << e << "\t" << m << "\n";
-    std::cout << "offset:" << oft << "\n";
-    std::cout << "shift:" << sht << "\n";
-    std::cout << "validity bits len:" << len << "\n";
-    std::cout << "is round to even:" << round_even << "\n";
-    std::cout << "carry:" << cry << "\n";
-
-    std::cout << "one hot:";
-    for(size_t i=0; i<onehot_len->bits.size(); i++){
-      std::cout << pb.val(onehot_len->ret(i)) << "\t";
-    }
-    std::cout << "\n";
-
-    std::cout << "validity bits:";
-    for(size_t i=0; i<validity_bits.size(); i++){
-      std::cout << validity_bits[i].evaluate(pb.full_variable_assignment()) << "\t";
-    }
-    std::cout << "\n";
-    std::cout << "pack:" << pack_man.evaluate(pb.full_variable_assignment()) << "\n";
+    // std::cout << "exp_overflow:" << pb.val(exp_overflow->ret_leq()) << "\n";
   }
+  std::shared_ptr<or_gadget> is_ret_zero;
+  std::shared_ptr<or_gadget> is_ret_abnorm;
+  std::shared_ptr<xnor_gadget> sign;
 
-  std::shared_ptr<pack_gadget> shift_bits;
-  std::shared_ptr<select_gadget> select_exp;
-  std::shared_ptr<zero_gadget> zero_exp;
-  std::shared_ptr<zero_gadget> is_shift_zero;
-  std::shared_ptr<min_gadget> bits_len;
-  std::shared_ptr<onehot_gadget> onehot_len;
-  std::shared_ptr<zero_gadget> is_round_even;
-  std::shared_ptr<select_gadget> carry;
-  std::shared_ptr<zero_gadget> is_overflow;
-  std::shared_ptr<select_gadget> man_ret;
-  std::shared_ptr<comparison_gadget> exp_overflow;
-  std::shared_ptr<comparison_gadget> exp_underflow;
+  std::shared_ptr<lshift_gadget> prod_lshift;
+  std::shared_ptr<pack_gadget> prod_lshift_bits;
+  std::shared_ptr<ternary_select_gadget> exp_delta;
+  std::shared_ptr<range_gadget> exp_range;
+  std::shared_ptr<pack_gadget> prod_bits;
+  std::shared_ptr<zero_gadget> is_round_even; //round
+  std::shared_ptr<select_gadget> carry;       //carry
+
+  std::shared_ptr<zero_gadget> is_man_overflow;    //进位后是否越界
+  std::shared_ptr<zero_gadget> is_man_zero;    //进位后尾数是否为0
+  std::shared_ptr<select_gadget> man; //处理overflow后的尾数
+  std::shared_ptr<comparison_gadget> is_exp_overflow;
+
+  float_var c;
+  libsnark::pb_variable<Fr> prod;
+  libsnark::pb_variable<Fr> pack_shift;        //有效位的移位
+  libsnark::pb_variable<Fr> two_delta;         //2^delta
+  libsnark::linear_combination<Fr> pack_man;
+  libsnark::linear_combination<Fr> exp;
+  
  
   mul_gadget(libsnark::protoboard<Fr>& pb,
-            float_var const& a,
-            float_var const& b,
-            float_var const& c,
-            const std::string& annotation_prefix = "")
+             float_var const& a,
+             float_var const& b,
+             const std::string& annotation_prefix = "")
       : libsnark::gadget<Fr>(pb, annotation_prefix),
-        a(a), b(b), c(c) {
+        a(a), b(b) {
     Tick tick(__FN__);
 
-    man.allocate(pb);
-    shift.allocate(pb);
-    offset.allocate(pb);
-    prod1.allocate(pb, M+1);
-    prod2.allocate(pb, M+1);
-    prod3.allocate(pb, M+1);
+    c.allocate(pb);
+    prod.allocate(pb);
+    two_delta.allocate(pb);
+    pack_shift.allocate(pb);
 
-    // 尾数相乘法
+    // m = m1 * m2
     pb.add_r1cs_constraint(
-      libsnark::r1cs_constraint<Fr>(a.mantissa, b.mantissa, man)
+      libsnark::r1cs_constraint<Fr>(a.mantissa, b.mantissa, prod)
     );
 
-    // offset的正确性
-    pb.add_r1cs_constraint(
-      libsnark::r1cs_constraint<Fr>(offset-1, offset-2, 0)
-    );
+    // prod的分解
+    prod_bits.reset(new pack_gadget(pb, prod, M*2+2));
 
-    // norm
-    pb.add_r1cs_constraint(
-      libsnark::r1cs_constraint<Fr>(man, offset, shift)
-    );
+    // e1 + e2 + high_bit
+    libsnark::linear_combination<Fr> sum = a.exponent+b.exponent+prod_bits->ret(2*M+1);
 
-    // shift的bit分解
-    shift_bits.reset(new pack_gadget(pb, shift, M*2+2));
+    // 判断exp是否属于区间[0, M+1]
+    libsnark::linear_combination<Fr> lbound = Pow2[E-1]+M-1, rbound = Pow2[E-1]+M+M;
+    exp_range.reset(new range_gadget(pb, E+2, sum, lbound, rbound));
+    libsnark::pb_variable_array<Fr> range_flag = exp_range->ret();
 
-    // shift是否为0
-    is_shift_zero.reset(new zero_gadget(pb, shift));
+    // (1, 1) => x < a        => M+2
+    // (0, 1) => x \in [a, b] => M+1-x = M+1-(exp-lbound)
+    // (0, 0) => x > b        => 0
+    // 根据exp的取值范围来确定round时尾数应该移动的位数
+    exp_delta.reset(new ternary_select_gadget(pb, range_flag[0], range_flag[1], 0, M+1-sum+lbound, M+2));
 
+    // 将prod右移动l位, 其中l \in [0, k], 相当于将prod左移动k-l位; 这里的移位把之前norm的移位加上了
+    prod_lshift.reset(new lshift_gadget(pb, prod, M+3-exp_delta->ret()-prod_bits->ret(M*2+1), misc::Log2UB(M+3)));
 
-    // shift的正确性: shift的高位为1或shift为0
-    pb.add_r1cs_constraint(
-      libsnark::r1cs_constraint<Fr>(1, is_shift_zero->ret()+shift_bits->ret(M*2+1), 1)
-    );
+    // 将prod进行bit分解以便进行round
+    prod_lshift_bits.reset(new pack_gadget(pb, prod_lshift->ret(), 3*M+4));
 
-    /**
-     * 指数结果
-     * 当e1+e2=0时, m=0, offset=1, e=1
-     * 当e1=0 || e2=0, m=0, offset=1, e>=1
-     * 当e1!=0 || e2!=0, e>=2
-     * 
-     *  */ 
-    libsnark::linear_combination<Fr> exp = a.exponent + b.exponent + 2 - offset;
-    zero_exp.reset(new zero_gadget(pb, exp));
-    select_exp.reset(new select_gadget(pb, zero_exp->ret(), 1, exp));
-
-
-    // 有效位长度
-    bits_len.reset(new min_gadget(pb, select_exp->ret(), M+1, E+2));
-
-    // 将len转化为one hot
-    onehot_len.reset(new onehot_gadget(pb, bits_len->ret(), M+1));
-
-    // 有效位标志
-    libsnark::linear_combination_array<Fr> validity_bits(M+1);
-    for(size_t i=0; i<M+1; i++){
-      for(size_t j=i; j<M+1; j++){
-        validity_bits[i] = validity_bits[i] + onehot_len->ret(j);
-      }
+    // round || sticky
+    libsnark::linear_combination<Fr> roud_stick=-Pow2[M*2+2];
+    for(size_t i=0; i<2*M+3; i++){
+      roud_stick = roud_stick + prod_lshift_bits->ret(i) * Pow2[i];
     }
+    is_round_even.reset(new zero_gadget(pb, roud_stick));
 
-    // stick bits
-    libsnark::linear_combination<Fr> pack_stick = 0;
-    for(size_t i=0; i<M*2+2; i++){
-      if(i < M+1) pack_stick = pack_stick+shift_bits->ret(i) * Pow2[i];
-      else pack_stick = pack_stick+(-validity_bits[M*2+1-i]+1) * Pow2[i];
-    }
-    for(size_t i=0; i<M+1; i++){
-      pack_stick = pack_stick - onehot_len->ret(M-i) * Pow2[M+1+i];
-    }
-
-    // round || stick == 100000
-    is_round_even.reset(new zero_gadget(pb, pack_stick));
-
-    libsnark::linear_combination<Fr> least_bit;
-    libsnark::linear_combination<Fr> round_bit;
-    libsnark::linear_combination<Fr> pack_man;
-    
-    for(size_t i=0; i<M+1; i++){
-      pb.add_r1cs_constraint(
-        libsnark::r1cs_constraint<Fr>(onehot_len->ret(i), shift_bits->ret(M*2+1-i), prod1[i])
-      );
-      pb.add_r1cs_constraint(
-        libsnark::r1cs_constraint<Fr>(onehot_len->ret(i), shift_bits->ret(M*2-i), prod2[i])
-      );
-      pb.add_r1cs_constraint(
-        libsnark::r1cs_constraint<Fr>(validity_bits[i]*Pow2[M-i], shift_bits->ret(M*2+1-i), prod3[i])
-      );
-      least_bit = least_bit + prod1[i];
-      round_bit = round_bit + prod2[i];
-      pack_man = pack_man + prod3[i];
-    }
-  
     // 是否有进位
-    carry.reset(new select_gadget(pb, is_round_even->ret(), least_bit, round_bit));
+    carry.reset(new select_gadget(pb, is_round_even->ret(), prod_lshift_bits->ret(2*M+3), prod_lshift_bits->ret(2*M+2)));
     
-    // 将前M位打包
-    pack_man = pack_man + carry->ret();
+    // 前M+1有效位
+    libsnark::linear_combination<Fr> pack_man = carry->ret();
+    for(size_t i=0; i<M+1; i++){
+      pack_man = pack_man + prod_lshift_bits->ret(2*M+3+i) * Pow2[i];
+    }
+
+    // 计算2^{exp_delta}
+    pb.add_r1cs_constraint(
+      libsnark::r1cs_constraint<Fr>(two_delta, prod_lshift->pow2->ret(), (-prod_bits->ret(M*2+1)+2)*Pow2[M+2])
+    );
+
+    // 将有效位移位使得高位为1
+    pb.add_r1cs_constraint(
+      libsnark::r1cs_constraint<Fr>(pack_man, two_delta, pack_shift)
+    );
 
     // 是否越界
-    is_overflow.reset(new zero_gadget(pb, pack_man - Pow2[M+1]));
+    is_man_overflow.reset(new zero_gadget(pb, pack_shift - Pow2[M+1]));
 
-    // round结果
-    man_ret.reset(new select_gadget(pb, is_overflow->ret(), Pow2[M], pack_man));
+    // 处理overflow后的尾数
+    man.reset(new select_gadget(pb, is_man_overflow->ret(), Pow2[M], pack_shift));
 
-    // 结果为0的情况: 输入有abnormal, 结果尾数为0, 指数上/下溢
+    // 进位后尾数是否为0
+    is_man_zero.reset(new zero_gadget(pb, man->ret()));
 
-    // 指数 = exp
-    // 指数上溢: exp + 150  >= (1<<E)-1+M
-    // 指数下溢: x_exp <= 0, 不可能发生
-    // exp_overflow.reset(new comparison_gadget(pb, E+1, add_norm->ret_offset()+(1<<E)-1+M, x_exponent+1+add_round->ret_overflow()));
-    // exp_underflow.reset(new comparison_gadget(pb, E+1, x_exponent+1+add_round->ret_overflow(), add_norm->ret_offset()));
+    // 尾数
+    exp = sum+carry->ret();
+
+    // 尾数是否上溢
+    is_exp_overflow.reset(new comparison_gadget(pb, E+2, (1<<E)-1+M+lbound, exp));
+
+    // 符号位
+    sign.reset(new xnor_gadget(pb, a.sign, b.sign));
+
+    // 处理值为0的情况: 输入有abnorml, 尾数为0, 指数上溢
+    libsnark::linear_combination_array<Fr> ret_zero_case(4);
+    ret_zero_case[0] = a.abnormal;
+    ret_zero_case[1] = b.abnormal;
+    ret_zero_case[2] = is_man_zero->ret();
+    ret_zero_case[3] = is_exp_overflow->ret_leq();
+    is_ret_zero.reset(new or_gadget(pb, ret_zero_case));
+
+    // 处理值为abnorm的情况: 输入有abnormal, 指数上溢
+    libsnark::linear_combination_array<Fr> ret_abnorm_case(3);
+    ret_abnorm_case[0] = a.abnormal;
+    ret_abnorm_case[1] = b.abnormal;
+    ret_abnorm_case[2] = is_exp_overflow->ret_leq();
+    is_ret_abnorm.reset(new or_gadget(pb, ret_abnorm_case));
+
+    pb.add_r1cs_constraint(
+      libsnark::r1cs_constraint<Fr>(1-is_ret_zero->ret(), 1-sign->ret(), c.sign)
+    );
+
+    pb.add_r1cs_constraint(
+      libsnark::r1cs_constraint<Fr>(1-is_ret_zero->ret(), exp-lbound, c.exponent)
+    );
+
+    pb.add_r1cs_constraint(
+      libsnark::r1cs_constraint<Fr>(1-is_ret_zero->ret(), man->ret(), c.mantissa)
+    );
+
+    pb.add_r1cs_constraint(
+      libsnark::r1cs_constraint<Fr>(1, is_ret_abnorm->ret(), c.abnormal)
+    );
   }
 
   float_var ret() const { return c; }
 
   float_var const& a;
   float_var const& b;
-  float_var const& c;
-
-  libsnark::pb_variable_array<Fr> prod1;
-  libsnark::pb_variable_array<Fr> prod2;
-  libsnark::pb_variable_array<Fr> prod3;
-
-  libsnark::pb_variable<Fr> man;
-  libsnark::pb_variable<Fr> offset;
-  libsnark::pb_variable<Fr> shift;
-
 };
 
 inline bool TestMul() {
   Tick tick(__FN__);
   libsnark::protoboard<Fr> pb;
-  float_var a, b, c;
+  float_var a, b;
   a.allocate(pb);
   b.allocate(pb);
-  c.allocate(pb);
-  mul_gadget gadget(pb, a, b, c);
-  const std::string path = std::string("/home/dj/work/gitwork/Float/data/f32/mul");
+  mul_gadget gadget(pb, a, b);
+  const std::string path = std::string("/home/dj/program/gitwork/zk-Location/data/f32/mul_bak");
   std::vector<std::vector<uint32_t>> data;
   Read2DFile(path, data);
 
@@ -268,14 +206,16 @@ inline bool TestMul() {
     std::array<uint, 4> f1 = float_var::NewF32(data[i][0]);
     std::array<uint, 4> f2 = float_var::NewF32(data[i][1]);
     std::array<uint, 4> f3 = float_var::NewF32(data[i][2]);
-    a.assign(pb, f1); b.assign(pb, f2); c.assign(pb, f3);
+    a.assign(pb, f1); b.assign(pb, f2);
     std::cout << i << "\n";
-    std::cout << "*********************************************************************\n";
-    std::cout << "a:" << f1[0] << "\t" << f1[1] << "\t" << f1[2] << "\t" << f1[3] << "\n";
-    std::cout << "b:" << f2[0] << "\t" << f2[1] << "\t" << f2[2] << "\t" << f2[3] << "\n";
-    std::cout << "c:" << f3[0] << "\t" << f3[1] << "\t" << f3[2] << "\t" << f3[3] << "\n";
+    // std::cout << "*********************************************************************\n";
+    // std::cout << "a:" << f1[0] << "\t" << f1[1] << "\t" << f1[2] << "\t" << f1[3] << "\n";
+    // std::cout << "b:" << f2[0] << "\t" << f2[1] << "\t" << f2[2] << "\t" << f2[3] << "\n";
+    // std::cout << "c:" << f3[0] << "\t" << f3[1] << "\t" << f3[2] << "\t" << f3[3] << "\n";
     gadget.generate_r1cs_witness();
     CHECK(pb.is_satisfied(), "");
+    CHECK(pb.val(gadget.ret().sign) == f3[0] && pb.val(gadget.ret().exponent) == f3[1] 
+          && pb.val(gadget.ret().mantissa) == f3[2] && pb.val(gadget.ret().abnormal) == f3[3], "");
   }
 
   std::cout << Tick::GetIndentString()

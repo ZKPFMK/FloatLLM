@@ -8,20 +8,20 @@
 
 
 namespace circuit::flt {
-class add_norm_gadget : public libsnark::gadget<Fr> {
+class edge_case_gadget : public libsnark::gadget<Fr> {
 public:
   /**
    * 要求:e \in {0, 1}^E, m \in {0, 1}^{M+1}
    * 返回 (man1 << exp1) <= (man2 << exp2) ? 1 : 0
    */
-  add_norm_gadget(libsnark::protoboard<Fr>& pb,
-                  libsnark::linear_combination<Fr> const& sign1,
-                  libsnark::linear_combination<Fr> const& sign2,
-                  libsnark::linear_combination<Fr> const& exp1,
-                  libsnark::linear_combination<Fr> const& exp2,
-                  libsnark::linear_combination<Fr> const& man1,
-                  libsnark::linear_combination<Fr> const& man2,
-                  const std::string& annotation_prefix = "")
+  edge_case_gadget(libsnark::protoboard<Fr>& pb,
+                   libsnark::linear_combination<Fr> const& sign1,
+                   libsnark::linear_combination<Fr> const& sign2,
+                   libsnark::linear_combination<Fr> const& exp1,
+                   libsnark::linear_combination<Fr> const& exp2,
+                   libsnark::linear_combination<Fr> const& man1,
+                   libsnark::linear_combination<Fr> const& man2,
+                   const std::string& annotation_prefix = "")
       : sign1(sign1), sign2(sign2), exp1(exp1), exp2(exp2), man1(man1), man2(man2),
         libsnark::gadget<Fr>(pb, annotation_prefix) {
       
